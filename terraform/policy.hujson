@@ -1,0 +1,94 @@
+// Sanitized policy template. Put live tailnet policy in an ignored local file
+// and set `policy_file` in terraform/terraform.tfvars when managing production.
+{
+	"groups": {
+		"group:admins": [
+			"admin@example.com",
+		],
+		"group:members": [
+			"user@example.com",
+		],
+	},
+
+	"tagOwners": {
+		"tag:client":      ["group:admins"],
+		"tag:server":      ["group:admins"],
+		"tag:storage":     ["group:admins"],
+		"tag:dns":         ["group:admins"],
+		"tag:exit-client": ["group:admins"],
+	},
+
+	"grants": [
+		{
+			// Client devices can reach other client devices.
+			"src": ["tag:client"],
+			"dst": ["tag:client"],
+			"ip":  ["*"],
+		},
+		{
+			// All devices can use the internal DNS resolver only for DNS.
+			"src": ["*"],
+			"dst": ["tag:dns"],
+			"ip":  ["53"],
+		},
+		{
+			// Members can reach routine service ports on servers.
+			"src": ["group:members"],
+			"dst": ["tag:server", "tag:storage"],
+			"ip":  ["80", "443"],
+		},
+		{
+			// Exit-node access is opt-in by tag, not available to every device.
+			"src": ["tag:exit-client"],
+			"dst": ["autogroup:internet"],
+			"ip":  ["*"],
+		},
+		{
+			// Admins retain explicit infrastructure access.
+			"src": ["group:admins"],
+			"dst": ["tag:server", "tag:storage", "tag:dns"],
+			"ip":  ["*"],
+		},
+	],
+
+	"ssh": [
+		{
+			"action": "check",
+			"src":    ["autogroup:member"],
+			"dst":    ["autogroup:self"],
+			"users":  ["autogroup:nonroot"],
+		},
+		{
+			"action": "check",
+			"src":    ["group:admins"],
+			"dst":    ["tag:server", "tag:storage", "tag:dns"],
+			"users":  ["root", "autogroup:nonroot"],
+		},
+	],
+
+	"tests": [
+		{
+			"src":    "group:members",
+			"accept": ["tag:server:443", "tag:storage:443", "tag:dns:53"],
+			"deny":   ["tag:server:22", "198.51.100.8:443"],
+		},
+		{
+			"src":    "tag:exit-client",
+			"accept": ["198.51.100.8:443", "tag:dns:53"],
+			"deny":   ["tag:server:22"],
+		},
+	],
+
+	"sshTests": [
+		{
+			"src":   "group:admins",
+			"dst":   ["tag:server"],
+			"check": ["root", "autogroup:nonroot"],
+		},
+		{
+			"src":  "group:members",
+			"dst":  ["tag:server"],
+			"deny": ["root", "autogroup:nonroot"],
+		},
+	],
+}
