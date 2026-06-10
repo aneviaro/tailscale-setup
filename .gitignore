@@ -9,3 +9,4 @@ crash.*.log
 .env.*
 !.env.example
 exports/
+docs/*
