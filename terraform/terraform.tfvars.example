@@ -21,7 +21,7 @@ split_nameservers = {
 
 device_tags = {
   # "dns-01.example.ts.net" = ["tag:dns"]
-  # "nas-01.example.ts.net" = ["tag:storage"]
+  # "nas-01.example.ts.net" = ["tag:home"]
 }
 
 device_subnet_routes = {

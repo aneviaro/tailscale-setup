@@ -53,6 +53,8 @@ resource "tailscale_device_tags" "by_name" {
 
   device_id = data.tailscale_device.tagged[each.key].node_id
   tags      = each.value
+
+  depends_on = [tailscale_acl.policy]
 }
 
 data "tailscale_device" "subnet_router" {
